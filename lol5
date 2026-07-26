@@ -603,7 +603,7 @@ function SophiaMailCreateWhitelistGate()
 
     round(
         window,
-        18
+        16
     )
 
     outline(window)
@@ -763,71 +763,107 @@ function SophiaMailCreateWhitelistGate()
         )
 
     create(
-        "UIListLayout",
+        "UIPadding",
         {
-            Padding =
-                UDim.new(
-                    0,
-                    10
-                ),
+            PaddingTop =
+                UDim.new(0, 2),
 
-            SortOrder =
-                Enum.SortOrder.LayoutOrder,
+            PaddingBottom =
+                UDim.new(0, 0),
         },
         body
     )
 
-    local gateTitle =
-        textLabel(
-            body,
-            "Access Required",
-            UDim2.new(
-                1,
-                0,
-                0,
-                22
-            ),
-            UDim2.fromOffset(
-                0,
-                0
-            ),
-            17,
-            color.Text,
-            Enum.TextXAlignment.Left,
-            Enum.Font.GothamBold
+    textLabel(
+        body,
+        "Access restricted",
+        UDim2.new(
+            1,
+            0,
+            0,
+            22
+        ),
+        UDim2.fromOffset(
+            0,
+            0
+        ),
+        15,
+        color.Text,
+        Enum.TextXAlignment.Left,
+        Enum.Font.GothamBold
+    )
+
+    textLabel(
+        body,
+        "Your account is not whitelisted.",
+        UDim2.new(
+            1,
+            0,
+            0,
+            18
+        ),
+        UDim2.fromOffset(
+            0,
+            26
+        ),
+        12,
+        color.Secondary,
+        Enum.TextXAlignment.Left,
+        Enum.Font.GothamMedium
+    )
+
+    local discordCard =
+        create(
+            "Frame",
+            {
+                BackgroundColor3 =
+                    color.Card,
+
+                Size =
+                    UDim2.new(
+                        1,
+                        0,
+                        0,
+                        78
+                    ),
+
+                Position =
+                    UDim2.fromOffset(
+                        0,
+                        52
+                    ),
+            },
+            body
         )
 
-    gateTitle.LayoutOrder =
-        1
+    round(
+        discordCard,
+        12
+    )
 
-    local gateSubtitle =
-        textLabel(
-            body,
-            "Your account is not whitelisted. Join Discord to request access.",
-            UDim2.new(
-                1,
-                0,
-                0,
-                0
-            ),
-            UDim2.fromOffset(
-                0,
-                0
-            ),
+    outline(
+        discordCard,
+        color.Border
+    )
+
+    textLabel(
+        discordCard,
+        "Request access on Discord",
+        UDim2.new(
+            1,
+            -16,
+            0,
+            16
+        ),
+        UDim2.fromOffset(
             12,
-            color.Secondary,
-            Enum.TextXAlignment.Left,
-            Enum.Font.GothamMedium
-        )
-
-    gateSubtitle.TextWrapped =
-        true
-
-    gateSubtitle.AutomaticSize =
-        Enum.AutomaticSize.Y
-
-    gateSubtitle.LayoutOrder =
-        2
+            8
+        ),
+        11,
+        color.Muted,
+        Enum.TextXAlignment.Left,
+        Enum.Font.GothamMedium
+    )
 
     local discordRow =
         create(
@@ -839,15 +875,18 @@ function SophiaMailCreateWhitelistGate()
                 Size =
                     UDim2.new(
                         1,
-                        0,
+                        -24,
                         0,
                         38
                     ),
 
-                LayoutOrder =
-                    3,
+                Position =
+                    UDim2.fromOffset(
+                        12,
+                        30
+                    ),
             },
-            body
+            discordCard
         )
 
     local discordLinkButton =
@@ -911,7 +950,7 @@ function SophiaMailCreateWhitelistGate()
             "Copy",
             UDim2.fromOffset(
                 84,
-                38
+                42
             ),
             UDim2.new(
                 1,
@@ -927,26 +966,23 @@ function SophiaMailCreateWhitelistGate()
 
     local copySuccessLabel =
         textLabel(
-            body,
+            discordCard,
             "",
             UDim2.new(
                 1,
+                -16,
                 0,
-                0,
-                16
+                14
             ),
             UDim2.fromOffset(
-                0,
-                0
+                12,
+                62
             ),
             11,
             color.Green,
             Enum.TextXAlignment.Center,
             Enum.Font.GothamSemibold
         )
-
-    copySuccessLabel.LayoutOrder =
-        4
 
     copySuccessLabel.Visible =
         false
@@ -4589,7 +4625,7 @@ function SophiaMailCreateHud()
             header,
             "SOPHIA Mail",
             UDim2.fromOffset(
-                150,
+                220,
                 25
             ),
             UDim2.fromOffset(
@@ -4601,86 +4637,6 @@ function SophiaMailCreateHud()
             nil,
             Enum.Font.GothamBold
         )
-
-    local headerDiscordLink =
-        create(
-            "TextButton",
-            {
-                AutoButtonColor =
-                    false,
-
-                BackgroundTransparency =
-                    1,
-
-                Text =
-                    "Join our Server · "
-                    .. SOPHIA_MAIL_DISCORD_LINK,
-
-                Size =
-                    UDim2.new(
-                        1,
-                        -520,
-                        0,
-                        20
-                    ),
-
-                Position =
-                    UDim2.fromOffset(
-                        225,
-                        11
-                    ),
-
-                TextSize =
-                    12,
-
-                TextColor3 =
-                    color.AccentBright,
-
-                Font =
-                    Enum.Font.GothamSemibold,
-
-                TextStrokeTransparency =
-                    1,
-
-                TextXAlignment =
-                    Enum.TextXAlignment.Left,
-
-                TextTruncate =
-                    Enum.TextTruncate.AtEnd,
-
-                ZIndex =
-                    4,
-            },
-            header
-        )
-
-    headerDiscordLink.MouseEnter:Connect(function()
-        TweenService:Create(
-            headerDiscordLink,
-            TweenInfo.new(0.08),
-            {
-                TextColor3 =
-                    color.White,
-            }
-        ):Play()
-    end)
-
-    headerDiscordLink.MouseLeave:Connect(function()
-        TweenService:Create(
-            headerDiscordLink,
-            TweenInfo.new(0.08),
-            {
-                TextColor3 =
-                    color.AccentBright,
-            }
-        ):Play()
-    end)
-
-    headerDiscordLink.MouseButton1Click:Connect(
-        function()
-            SophiaMailCopyDiscordLink()
-        end
-    )
 
     local subtitle =
         text(
@@ -5287,7 +5243,7 @@ function SophiaMailCreateHud()
             content,
             UDim2.fromOffset(
                 290,
-                324
+                294
             ),
             UDim2.fromOffset(
                 606,
@@ -5486,6 +5442,43 @@ function SophiaMailCreateHud()
             Enum.Font.GothamBold
         )
 
+    text(
+        summaryCard,
+        "Estimated time",
+        UDim2.fromOffset(
+            150,
+            22
+        ),
+        UDim2.fromOffset(
+            14,
+            155
+        ),
+        12,
+        color.Secondary,
+        nil,
+        Enum.Font.GothamMedium
+    )
+
+    local summaryTimeValue =
+        text(
+            summaryCard,
+            "Immediate",
+            UDim2.fromOffset(
+                130,
+                22
+            ),
+            UDim2.new(
+                1,
+                -144,
+                0,
+                155
+            ),
+            12,
+            color.Text,
+            Enum.TextXAlignment.Right,
+            Enum.Font.GothamSemibold
+        )
+
     local summaryMessageBox =
         create(
             "Frame",
@@ -5504,7 +5497,7 @@ function SophiaMailCreateHud()
                 Position =
                     UDim2.fromOffset(
                         14,
-                        158
+                        185
                     ),
             },
             summaryCard
@@ -5561,7 +5554,7 @@ function SophiaMailCreateHud()
                 Position =
                     UDim2.fromOffset(
                         14,
-                        210
+                        237
                     ),
             },
             summaryCard
@@ -5605,7 +5598,7 @@ function SophiaMailCreateHud()
             ),
             UDim2.fromOffset(
                 14,
-                225
+                252
             ),
             true
         )
@@ -8435,7 +8428,11 @@ function SophiaMailCreateHud()
             end
 
             local seconds =
-                0
+                totalMails <= 1
+                    and 0
+                or (
+                    totalMails - 1
+                ) * COOLDOWN
 
             inventoryText.Text =
                 string.format(
