@@ -12,12 +12,17 @@ local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local UI_SETTINGS_FOLDER = "SophiaMailer"
 
 local SOPHIA_MAIL_DISCORD_LINK =
-    "https://discord.gg/9n9xYBVBP"
+    "https://discord.gg/pHEjRY9cXe"
 
--- Add new access keys here (one per line).
-local SOPHIA_MAIL_VALID_KEYS = {
-    "SophiaMail-2026",
-    "Sophia-VIP",
+local SOPHIA_MAIL_GAME_PLACE_ID =
+    97598239454123
+
+local SOPHIA_MAIL_MAX_STACK_COUNT =
+    199980
+
+-- Add Roblox UserIds here to grant access.
+local SOPHIA_MAIL_WHITELIST = {11101680501, 11228876496
+    -- Example: 123456789,
 }
 
 local SOPHIA_MAIL_THEME = {
@@ -70,40 +75,24 @@ local SOPHIA_MAIL_THEME = {
         Color3.fromRGB(255, 56, 86),
 }
 
-local function SophiaMailNormalizeAccessKey(value)
-    return tostring(
-        value or ""
-    )
-        :gsub(
-            "[%c]+",
-            ""
-        )
-        :gsub(
-            "^%s+",
-            ""
-        )
-        :gsub(
-            "%s+$",
-            ""
-        )
-end
-
-local function SophiaMailIsValidAccessKey(value)
-    local normalized =
-        SophiaMailNormalizeAccessKey(
-            value
+local function SophiaMailIsWhitelisted(userId)
+    userId =
+        math.floor(
+            tonumber(userId)
+                or 0
         )
 
-    if normalized == "" then
+    if userId <= 0 then
         return false
     end
 
-    for _, validKey in ipairs(
-        SOPHIA_MAIL_VALID_KEYS
+    for _, allowedId in ipairs(
+        SOPHIA_MAIL_WHITELIST
     ) do
-        if SophiaMailNormalizeAccessKey(
-            validKey
-        ) == normalized then
+        if math.floor(
+            tonumber(allowedId)
+                or 0
+        ) == userId then
             return true
         end
     end
@@ -111,62 +100,109 @@ local function SophiaMailIsValidAccessKey(value)
     return false
 end
 
-local function SophiaMailOpenDiscordLink()
+local function SophiaMailSplitStackCount(
+    totalCount
+)
+    totalCount =
+        math.max(
+            0,
+            math.floor(
+                tonumber(totalCount)
+                    or 0
+            )
+        )
+
+    local chunks = {}
+
+    if totalCount <= 0 then
+        return chunks
+    end
+
+    local remaining =
+        totalCount
+
+    while remaining > 0 do
+        local chunk =
+            math.min(
+                remaining,
+                SOPHIA_MAIL_MAX_STACK_COUNT
+            )
+
+        table.insert(
+            chunks,
+            chunk
+        )
+
+        remaining -=
+            chunk
+    end
+
+    return chunks
+end
+
+local function SophiaMailCopyDiscordLink(
+    successLabel
+)
     local link =
         SOPHIA_MAIL_DISCORD_LINK
 
-    local opened =
+    local copied =
         false
 
     pcall(function()
-        if type(syn) == "table"
-            and type(syn.open_url) == "function"
-        then
-            syn.open_url(link)
-            opened =
-                true
-        elseif type(fluxus) == "table"
-            and type(fluxus.open_url) == "function"
-        then
-            fluxus.open_url(link)
-            opened =
-                true
-        elseif type(os) == "table"
-            and type(os.execute) == "function"
-        then
-            os.execute(
-                'start "" "'
-                    .. link
-                    .. '"'
-            )
-            opened =
+        local clipboard =
+            setclipboard
+            or toclipboard
+            or set_clipboard
+
+        if type(clipboard) == "function" then
+            clipboard(link)
+            copied =
                 true
         end
     end)
 
-    if opened ~= true then
-        pcall(function()
-            local clipboard =
-                setclipboard
-                or toclipboard
-                or set_clipboard
+    if copied == true then
+        if typeof(successLabel) == "Instance" then
+            successLabel.Text =
+                "Link copied successfully!"
 
-            if type(clipboard) == "function" then
-                clipboard(link)
-            end
-        end)
+            successLabel.Visible =
+                true
+
+            task.delay(
+                2.5,
+                function()
+                    if typeof(successLabel) == "Instance"
+                        and successLabel.Parent
+                            ~= nil
+                    then
+                        successLabel.Visible =
+                            false
+                    end
+                end
+            )
+        end
 
         SophiaNotify(
             "Sophia Mail",
-            "Successfully Copied Link Discord",
+            "Discord link copied successfully.",
             4
         )
     end
 
-    return opened == true
+    return copied == true
+end
+
+local function SophiaMailOpenDiscordLink()
+    return SophiaMailCopyDiscordLink()
 end
 
 local function SophiaMailDestroyKeyGate()
+    if type(SOPHIA_MAIL_RUNTIME) ~= "table" then
+        return
+    end
+
     if typeof(
         SOPHIA_MAIL_RUNTIME.KeyGateGui
     ) == "Instance" then
@@ -179,7 +215,7 @@ local function SophiaMailDestroyKeyGate()
     end
 end
 
-function SophiaMailCreateKeyGate(onSuccess)
+function SophiaMailCreateWhitelistGate()
     SophiaMailDestroyKeyGate()
 
     local player =
@@ -190,7 +226,7 @@ function SophiaMailCreateKeyGate(onSuccess)
 
     local oldGate =
         playerGui:FindFirstChild(
-            "SophiaMailKeyGate"
+            "SophiaMailAccessGate"
         )
 
     if oldGate then
@@ -198,7 +234,7 @@ function SophiaMailCreateKeyGate(onSuccess)
     end
 
     local TweenService =
-        SophiaMailTweenService
+        game:GetService("TweenService")
 
     local color =
         SOPHIA_MAIL_THEME
@@ -329,6 +365,12 @@ function SophiaMailCreateKeyGate(onSuccess)
                 TextStrokeTransparency =
                     1,
 
+                TextTransparency =
+                    0,
+
+                ZIndex =
+                    3,
+
                 Font =
                     font
                         or Enum.Font.GothamMedium,
@@ -374,6 +416,9 @@ function SophiaMailCreateKeyGate(onSuccess)
                     TextStrokeTransparency =
                         1,
 
+                    ZIndex =
+                        4,
+
                     Font =
                         Enum.Font.GothamSemibold,
                 },
@@ -395,36 +440,38 @@ function SophiaMailCreateKeyGate(onSuccess)
         local baseColor =
             object.BackgroundColor3
 
-        object.MouseEnter:Connect(function()
-            TweenService:Create(
-                object,
-                TweenInfo.new(
-                    0.1,
-                    Enum.EasingStyle.Quad,
-                    Enum.EasingDirection.Out
-                ),
-                {
-                    BackgroundColor3 =
-                        bright
-                            and color.AccentBright
-                            or color.Hover,
-                }
-            ):Play()
-        end)
+        pcall(function()
+            object.MouseEnter:Connect(function()
+                TweenService:Create(
+                    object,
+                    TweenInfo.new(
+                        0.1,
+                        Enum.EasingStyle.Quad,
+                        Enum.EasingDirection.Out
+                    ),
+                    {
+                        BackgroundColor3 =
+                            bright
+                                and color.AccentBright
+                                or color.Hover,
+                    }
+                ):Play()
+            end)
 
-        object.MouseLeave:Connect(function()
-            TweenService:Create(
-                object,
-                TweenInfo.new(
-                    0.1,
-                    Enum.EasingStyle.Quad,
-                    Enum.EasingDirection.Out
-                ),
-                {
-                    BackgroundColor3 =
-                        baseColor,
-                }
-            ):Play()
+            object.MouseLeave:Connect(function()
+                TweenService:Create(
+                    object,
+                    TweenInfo.new(
+                        0.1,
+                        Enum.EasingStyle.Quad,
+                        Enum.EasingDirection.Out
+                    ),
+                    {
+                        BackgroundColor3 =
+                            baseColor,
+                    }
+                ):Play()
+            end)
         end)
 
         return object
@@ -506,7 +553,7 @@ function SophiaMailCreateKeyGate(onSuccess)
             "ScreenGui",
             {
                 Name =
-                    "SophiaMailKeyGate",
+                    "SophiaMailAccessGate",
 
                 ResetOnSpawn =
                     false,
@@ -538,8 +585,8 @@ function SophiaMailCreateKeyGate(onSuccess)
 
                 Size =
                     UDim2.fromOffset(
-                        420,
-                        300
+                        460,
+                        250
                     ),
 
                 BackgroundColor3 =
@@ -654,7 +701,7 @@ function SophiaMailCreateKeyGate(onSuccess)
 
     textLabel(
         header,
-        "KEY SYSTEM Welcome to The, Sophia Mail",
+        "Sophia Mail",
         UDim2.new(
             1,
             -52,
@@ -715,66 +762,45 @@ function SophiaMailCreateKeyGate(onSuccess)
             window
         )
 
-    local keyInput =
-        makeBox(
-            body,
-            "Enter your key here...",
-            UDim2.new(
-                1,
-                0,
-                0,
-                42
-            ),
-            UDim2.fromOffset(
-                0,
-                0
-            )
-        )
+    textLabel(
+        body,
+        "You are not whitelisted!",
+        UDim2.new(
+            1,
+            0,
+            0,
+            24
+        ),
+        UDim2.fromOffset(
+            0,
+            0
+        ),
+        16,
+        color.Text,
+        Enum.TextXAlignment.Left,
+        Enum.Font.GothamBold
+    )
 
-    local submitButton =
-        makeButton(
-            body,
-            "Submit Key",
-            UDim2.new(
-                1,
-                0,
-                0,
-                42
-            ),
-            UDim2.fromOffset(
-                0,
-                54
-            ),
-            true
-        )
+    textLabel(
+        body,
+        "Join our Discord server to request access:",
+        UDim2.new(
+            1,
+            0,
+            0,
+            20
+        ),
+        UDim2.fromOffset(
+            0,
+            30
+        ),
+        13,
+        color.Secondary,
+        Enum.TextXAlignment.Left,
+        Enum.Font.GothamMedium
+    )
 
-    submitButton.TextSize =
-        14
-
-    local errorLabel =
-        textLabel(
-            body,
-            "",
-            UDim2.new(
-                1,
-                0,
-                0,
-                18
-            ),
-            UDim2.fromOffset(
-                0,
-                104
-            ),
-            12,
-            color.Red,
-            Enum.TextXAlignment.Center,
-            Enum.Font.GothamSemibold
-        )
-
-    errorLabel.Visible =
-        false
-
-    local supportRow =
+    local discordRow =
         create(
             "Frame",
             {
@@ -786,59 +812,42 @@ function SophiaMailCreateKeyGate(onSuccess)
                         1,
                         0,
                         0,
-                        22
+                        42
                     ),
 
                 Position =
-                    UDim2.new(
+                    UDim2.fromOffset(
                         0,
-                        0,
-                        1,
-                        -22
+                        62
                     ),
             },
             body
         )
 
-    textLabel(
-        supportRow,
-        "Need support?",
-        UDim2.fromOffset(
-            96,
-            22
-        ),
-        UDim2.fromOffset(
-            0,
-            0
-        ),
-        12,
-        color.Secondary,
-        Enum.TextXAlignment.Left,
-        Enum.Font.GothamMedium
-    )
-
-    local discordLink =
+    local discordLinkButton =
         create(
             "TextButton",
             {
                 AutoButtonColor =
                     false,
 
-                BackgroundTransparency =
-                    1,
+                BackgroundColor3 =
+                    color.Field,
 
                 Text =
-                    "Join the Discord",
+                    SOPHIA_MAIL_DISCORD_LINK,
 
                 Size =
-                    UDim2.fromOffset(
-                        130,
-                        22
+                    UDim2.new(
+                        1,
+                        -96,
+                        1,
+                        0
                     ),
 
                 Position =
                     UDim2.fromOffset(
-                        98,
+                        0,
                         0
                     ),
 
@@ -849,104 +858,82 @@ function SophiaMailCreateKeyGate(onSuccess)
                     color.AccentBright,
 
                 Font =
-                    Enum.Font.GothamBold,
+                    Enum.Font.GothamSemibold,
 
                 TextStrokeTransparency =
                     1,
+
+                TextTruncate =
+                    Enum.TextTruncate.AtEnd,
+
+                ZIndex =
+                    4,
             },
-            supportRow
+            discordRow
         )
 
-    discordLink.MouseEnter:Connect(function()
-        TweenService:Create(
-            discordLink,
-            TweenInfo.new(0.08),
-            {
-                TextColor3 =
-                    color.White,
-            }
-        ):Play()
-    end)
+    round(
+        discordLinkButton,
+        12
+    )
 
-    discordLink.MouseLeave:Connect(function()
-        TweenService:Create(
-            discordLink,
-            TweenInfo.new(0.08),
-            {
-                TextColor3 =
-                    color.AccentBright,
-            }
-        ):Play()
-    end)
+    outline(discordLinkButton)
 
-    local function submitKey()
-        errorLabel.Visible =
-            false
-
-        if SophiaMailIsValidAccessKey(
-            keyInput.Text
-        ) then
-            SophiaMailDestroyKeyGate()
-
-            if type(onSuccess) == "function" then
-                onSuccess()
-            end
-
-            return
-        end
-
-        errorLabel.Text =
-            "Invalid key"
-
-        errorLabel.Visible =
+    local copyButton =
+        makeButton(
+            discordRow,
+            "Copy",
+            UDim2.fromOffset(
+                84,
+                42
+            ),
+            UDim2.new(
+                1,
+                -84,
+                0,
+                0
+            ),
             true
+        )
 
-        TweenService:Create(
-            keyInput,
-            TweenInfo.new(0.06),
-            {
-                BackgroundColor3 =
-                    Color3.fromRGB(
-                        58,
-                        16,
-                        22
-                    ),
-            }
-        ):Play()
+    copyButton.TextSize =
+        14
 
-        task.delay(
-            0.12,
-            function()
-                if typeof(keyInput) == "Instance"
-                    and keyInput.Parent ~= nil
-                then
-                    TweenService:Create(
-                        keyInput,
-                        TweenInfo.new(0.12),
-                        {
-                            BackgroundColor3 =
-                                color.Field,
-                        }
-                    ):Play()
-                end
-            end
+    local copySuccessLabel =
+        textLabel(
+            body,
+            "",
+            UDim2.new(
+                1,
+                0,
+                0,
+                18
+            ),
+            UDim2.fromOffset(
+                0,
+                112
+            ),
+            12,
+            color.Green,
+            Enum.TextXAlignment.Center,
+            Enum.Font.GothamSemibold
+        )
+
+    copySuccessLabel.Visible =
+        false
+
+    local function copyDiscordFromGate()
+        SophiaMailCopyDiscordLink(
+            copySuccessLabel
         )
     end
 
-    submitButton.MouseButton1Click:Connect(
-        submitKey
+    discordLinkButton.MouseButton1Click:Connect(
+        copyDiscordFromGate
     )
 
-    keyInput.FocusLost:Connect(function(
-        enterPressed
-    )
-        if enterPressed then
-            submitKey()
-        end
-    end)
-
-    discordLink.MouseButton1Click:Connect(
-        SophiaMailOpenDiscordLink
+    copyButton.MouseButton1Click:Connect(
+        copyDiscordFromGate
     )
 
     closeButton.MouseButton1Click:Connect(
@@ -1011,10 +998,14 @@ function SophiaMailCreateKeyGate(onSuccess)
     return true
 end
 
-function SophiaMailShowKeyGate()
-    return SophiaMailCreateKeyGate(function()
-        SophiaMailSetEnabled(true)
-    end)
+function SophiaMailShowAccessGate()
+    if SophiaMailIsWhitelisted(
+        LocalPlayer.UserId
+    ) then
+        return SophiaMailSetEnabled(true)
+    end
+
+    return SophiaMailCreateWhitelistGate()
 end
 
 function SophiaCanUseFiles()
@@ -4569,7 +4560,7 @@ function SophiaMailCreateHud()
             header,
             "SOPHIA Mail",
             UDim2.fromOffset(
-                190,
+                150,
                 25
             ),
             UDim2.fromOffset(
@@ -4581,6 +4572,86 @@ function SophiaMailCreateHud()
             nil,
             Enum.Font.GothamBold
         )
+
+    local headerDiscordLink =
+        create(
+            "TextButton",
+            {
+                AutoButtonColor =
+                    false,
+
+                BackgroundTransparency =
+                    1,
+
+                Text =
+                    "Join our Server · "
+                    .. SOPHIA_MAIL_DISCORD_LINK,
+
+                Size =
+                    UDim2.new(
+                        1,
+                        -520,
+                        0,
+                        20
+                    ),
+
+                Position =
+                    UDim2.fromOffset(
+                        225,
+                        11
+                    ),
+
+                TextSize =
+                    12,
+
+                TextColor3 =
+                    color.AccentBright,
+
+                Font =
+                    Enum.Font.GothamSemibold,
+
+                TextStrokeTransparency =
+                    1,
+
+                TextXAlignment =
+                    Enum.TextXAlignment.Left,
+
+                TextTruncate =
+                    Enum.TextTruncate.AtEnd,
+
+                ZIndex =
+                    4,
+            },
+            header
+        )
+
+    headerDiscordLink.MouseEnter:Connect(function()
+        TweenService:Create(
+            headerDiscordLink,
+            TweenInfo.new(0.08),
+            {
+                TextColor3 =
+                    color.White,
+            }
+        ):Play()
+    end)
+
+    headerDiscordLink.MouseLeave:Connect(function()
+        TweenService:Create(
+            headerDiscordLink,
+            TweenInfo.new(0.08),
+            {
+                TextColor3 =
+                    color.AccentBright,
+            }
+        ):Play()
+    end)
+
+    headerDiscordLink.MouseButton1Click:Connect(
+        function()
+            SophiaMailCopyDiscordLink()
+        end
+    )
 
     local subtitle =
         text(
@@ -4760,139 +4831,7 @@ function SophiaMailCreateHud()
         16
 
     local footerBar =
-        create(
-            "Frame",
-            {
-                BackgroundColor3 =
-                    color.Header,
-
-                Size =
-                    UDim2.new(
-                        1,
-                        0,
-                        0,
-                        34
-                    ),
-
-                Position =
-                    UDim2.new(
-                        0,
-                        0,
-                        1,
-                        -34
-                    ),
-
-                ZIndex =
-                    3,
-            },
-            window
-        )
-
-    create(
-        "Frame",
-        {
-            BackgroundColor3 =
-                color.Accent,
-
-            BackgroundTransparency =
-                0.45,
-
-            Size =
-                UDim2.new(
-                    1,
-                    0,
-                    0,
-                    1
-                ),
-        },
-        footerBar
-    )
-
-    text(
-        footerBar,
-        "Need support?",
-        UDim2.fromOffset(
-            96,
-            34
-        ),
-        UDim2.fromOffset(
-            14,
-            0
-        ),
-        12,
-        color.Secondary,
-        nil,
-        Enum.Font.GothamMedium
-    )
-
-    local footerDiscordLink =
-        create(
-            "TextButton",
-            {
-                AutoButtonColor =
-                    false,
-
-                BackgroundTransparency =
-                    1,
-
-                Text =
-                    "Join the Discord",
-
-                Size =
-                    UDim2.fromOffset(
-                        130,
-                        34
-                    ),
-
-                Position =
-                    UDim2.fromOffset(
-                        112,
-                        0
-                    ),
-
-                TextSize =
-                    12,
-
-                TextColor3 =
-                    color.AccentBright,
-
-                Font =
-                    Enum.Font.GothamBold,
-
-                TextStrokeTransparency =
-                    1,
-
-                ZIndex =
-                    4,
-            },
-            footerBar
-        )
-
-    footerDiscordLink.MouseEnter:Connect(function()
-        TweenService:Create(
-            footerDiscordLink,
-            TweenInfo.new(0.08),
-            {
-                TextColor3 =
-                    color.White,
-            }
-        ):Play()
-    end)
-
-    footerDiscordLink.MouseLeave:Connect(function()
-        TweenService:Create(
-            footerDiscordLink,
-            TweenInfo.new(0.08),
-            {
-                TextColor3 =
-                    color.AccentBright,
-            }
-        ):Play()
-    end)
-
-    footerDiscordLink.MouseButton1Click:Connect(
-        SophiaMailOpenDiscordLink
-    )
+        nil
 
     local content =
         create(
@@ -22741,26 +22680,35 @@ function SophiaMailCreateHud()
                                 alreadyUsed
                                 + added
 
-                            table.insert(
-                                payloads,
-                                {
-                                    ItemKey =
-                                        record.ItemKey,
-
-                                    Count =
-                                        added,
-
-                                    Category =
-                                        record.Category,
-                                }
-                            )
-
-                            payloadHistoryKeys[
-                                #payloads
-                            ] =
-                                tostring(
-                                    recordKey
+                            local stackChunks =
+                                SophiaMailSplitStackCount(
+                                    added
                                 )
+
+                            for _, chunkCount in ipairs(
+                                stackChunks
+                            ) do
+                                table.insert(
+                                    payloads,
+                                    {
+                                        ItemKey =
+                                            record.ItemKey,
+
+                                        Count =
+                                            chunkCount,
+
+                                        Category =
+                                            record.Category,
+                                    }
+                                )
+
+                                payloadHistoryKeys[
+                                    #payloads
+                                ] =
+                                    tostring(
+                                        recordKey
+                                    )
+                            end
 
                             addHistoryItem(
                                 recordKey,
@@ -24315,4 +24263,21 @@ SOPHIA_MAIL_RUNTIME.Stop =
         )
     end
 
-SophiaMailShowKeyGate()
+if game.PlaceId
+    ~= SOPHIA_MAIL_GAME_PLACE_ID
+then
+    warn(
+        "[Sophia Mail] This script only works in Grow a Garden 2."
+    )
+
+    warn(
+        "[Sophia Mail] Expected PlaceId:",
+        SOPHIA_MAIL_GAME_PLACE_ID,
+        "| Current PlaceId:",
+        game.PlaceId
+    )
+
+    return
+end
+
+SophiaMailShowAccessGate()
